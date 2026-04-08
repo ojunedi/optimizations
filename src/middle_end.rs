@@ -1027,13 +1027,22 @@ enum PossibleValues {
 impl PossibleValues {
     /// The least [`PossibleValues`]
     fn bottom() -> Self {
-        todo!("PossibleValues::bottom")
+        PossibleValues::None
     }
 
     /// The least upper bound of two possible values
     fn lub(self, other: Self) -> Self {
-        todo!("PossibleValues::lub")
+        match (self, other) {
+            // least upper bound of each "component" so to speak
+            (PossibleValues::Assigned(a), PossibleValues::Assigned(b)) => {
+                PossibleValues::Assigned([a[0].lub(b[0]), a[1].lub(b[1])])
+            },
+            (PossibleValues::Assigned(a), PossibleValues::None) => PossibleValues::Assigned(a),
+            (PossibleValues::None, PossibleValues::Assigned(b)) => PossibleValues::Assigned(b),
+            (PossibleValues::None, PossibleValues::None) => PossibleValues::None
+        }
     }
+
 
     /// mutably update self to be its least upper bound with other
     fn lub_mut(&mut self, other: Self) {
@@ -1042,22 +1051,22 @@ impl PossibleValues {
 
     /// The greatest [`PossibleValues`]
     fn top() -> Self {
-        todo!("PossibleValues::top")
+        PossibleValues::Assigned([PossibleBitValues::Any, PossibleBitValues::Any])
     }
 
     /// The possible values of an integer that is assigned
     fn integer() -> Self {
-        todo!("PossibleValues::integer")
+        PossibleValues::Assigned([PossibleBitValues::Any, PossibleBitValues::Zero])
     }
 
     /// The possible values of a boolean that is assigned
     fn boolean() -> Self {
-        todo!("PossibleValues::boolean")
+        PossibleValues::Assigned([PossibleBitValues::Zero, PossibleBitValues::One])
     }
 
     /// The possible values of an array that is assigned
     fn array() -> Self {
-        todo!("PossibleValues::array")
+        PossibleValues::Assigned([PossibleBitValues::One, PossibleBitValues::One])
     }
 }
 
@@ -1075,7 +1084,17 @@ enum PossibleBitValues {
 impl PossibleBitValues {
     /// The least upper bound of two possible bit values
     fn lub(self, other: Self) -> Self {
-        todo!("PossibleBitValues::lub")
+        match (self, other) {
+            (PossibleBitValues::Any, PossibleBitValues::Any) => PossibleBitValues::Any,
+            (PossibleBitValues::Any, PossibleBitValues::Zero) => PossibleBitValues::Any,
+            (PossibleBitValues::Any, PossibleBitValues::One) => PossibleBitValues::Any,
+            (PossibleBitValues::Zero, PossibleBitValues::Any) => PossibleBitValues::Any,
+            (PossibleBitValues::Zero, PossibleBitValues::One) => PossibleBitValues::Any,
+            (PossibleBitValues::One, PossibleBitValues::Any) => PossibleBitValues::Any,
+            (PossibleBitValues::One, PossibleBitValues::Zero) => PossibleBitValues::Any,
+            (PossibleBitValues::One, PossibleBitValues::One) => PossibleBitValues::One,
+            (PossibleBitValues::Zero, PossibleBitValues::Zero) => PossibleBitValues::Zero,
+        }
     }
 }
 
@@ -1086,18 +1105,29 @@ pub struct PossibleValuesEnv(HashMap<VarName, PossibleValues>);
 
 impl PossibleValuesEnv {
     fn bottom() -> Self {
-        todo!("PossibleValuesEnv::bottom")
+        PossibleValuesEnv(HashMap::new())
     }
 
     /// mutably update self to be its least upper bound with other
     fn lub_mut(&mut self, other: Self) {
-        todo!("PossibleValuesEnv::lub_mut")
+        for (key, val) in other.0 {
+            self.0.entry(key)
+                .and_modify(|existing| existing.lub_mut(val))
+                .or_insert(val);
+        }
     }
 
     /// Produces the possible values an immediate may have based on the
     /// current environment information
     fn possible_values(&self, imm: &Immediate<VarName>) -> PossibleValues {
-        todo!("PossibleValuesEnv::possible_values")
+        match imm {
+            Immediate::Const(c) => {
+                let last = if c & 1 == 0 { PossibleBitValues::Zero } else { PossibleBitValues::One };
+                let second = if c & 2 == 0 { PossibleBitValues::Zero } else { PossibleBitValues::One };
+                PossibleValues::Assigned([second, last])
+            }
+            Immediate::Var(v) => self.0.get(v).copied().unwrap_or(PossibleValues::None)
+        }
     }
 }
 

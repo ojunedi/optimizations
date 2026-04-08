@@ -590,11 +590,16 @@ impl RegisterAllocator {
                 .filter_map(|n| self.assignment.get(n).and_then(|a| a.as_reg()))
                 .collect();
 
+            if log {
+                dbg!(&neighbor_colors);
+            }
+
             // pick the first available register
             let alloc = all_regs
                 .iter()
                 .find(|r| !neighbor_colors.contains(r))
                 .map(|r| Allocation::Reg(*r))
+                .inspect(|r| {if log {dbg!(v.clone(), r);}})
                 .unwrap_or_else(|| Allocation::Spill(self.spill()));
 
             self.assignment.insert(v, alloc);
