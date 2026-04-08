@@ -489,9 +489,59 @@ impl ConflictAnalysis {
         analysis
     }
 
+
+    fn build_block_body(&mut self, body: &BlockBody<VarName, LiveSet>) {
+
+        match body {
+            BlockBody::Terminator(_terminator, _) => {},
+            BlockBody::Operation { dest, op, next, ana } => {
+                for v in next.analysis().iter() {
+                    if v != dest {
+                        self.interference.insert_edge(dest.clone(), v.clone());
+                    }
+                }
+                self.interference.insert_vertex(dest.clone());
+                self.order.push(dest.clone());
+                self.build_block_body(next);
+            }
+            BlockBody::SubBlocks { blocks, next, ana } => {
+                for block in blocks {
+                    self.build_basic_block(block);
+                }
+                self.build_block_body(next);
+            }
+            // Store, Assert*, we can just recurse into next
+            _ => {
+                if let Some(next) = body.successor() {
+                  self.build_block_body(next);
+              }
+
+            }
+        }
+
+    }
+
+    fn build_basic_block(&mut self, block: &BasicBlock<VarName, LiveSet>) {
+        // block params conflict with each other, add to graph and elimination order
+        for (i, p1) in block.params.iter().enumerate() {
+            self.interference.insert_vertex(p1.clone());
+            for p2 in &block.params[i + 1..] {
+                self.interference.insert_edge(p1.clone(), p2.clone());
+            }
+        }
+        self.order.extend(block.params.iter().cloned());
+        self.build_block_body(&block.body);
+    }
+
     // Traverse the program, which is annotated with liveness information, building up the interference graph as well as the elimination order.
     fn build_prog(&mut self, Program { externs: _, funs: _, blocks }: &Program<VarName, LiveSet>) {
-        todo!("implement ConflictAnalysis")
+
+        for block in blocks {
+            self.build_basic_block(block);
+        }
+
+
+
     }
 }
 
