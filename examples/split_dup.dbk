@@ -1,0 +1,6 @@
+def main(args):
+  def foo(x):
+    let y = x + x in
+    y
+  in
+  foo(1)

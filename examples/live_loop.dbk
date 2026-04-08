@@ -1,0 +1,13 @@
+def main(_):
+  def f(x, y, z):
+    def loop(i, a):
+      if i == 0:
+        a * z
+      else:
+        let i_ = i - 1 in
+        let a_ = a + x in
+        loop(i_, a_)
+    in
+    loop(y, 0)
+  in
+  f(1, 2, 3)

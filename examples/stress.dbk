@@ -1,0 +1,12 @@
+def main(z):
+let z = z[0] in
+  def mult(x,y):
+    def mult_x(i, acc):
+      if i == 0:
+        acc
+      else:
+        mult_x(i - 1, acc + x)
+    in
+  mult_x(y, 0)
+in
+mult(7, z + 0)

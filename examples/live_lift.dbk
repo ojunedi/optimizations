@@ -1,0 +1,7 @@
+def main(args):
+  def gcd(a, b):
+    if a < b: gcd(b, a) else:
+    if a == b: a else:
+    gcd(a - b, b)
+  in
+  gcd(1000, 1453) + gcd(324798, 321)

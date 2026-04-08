@@ -1,0 +1,6 @@
+def main(arg):
+  let arg = arg[0] in
+  def fact(n, acc):
+    if n <= 0 : acc else: fact(n - 1 , acc * n)
+  in
+  fact(arg + 0, 1)

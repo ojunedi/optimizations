@@ -1,0 +1,17 @@
+extern f()
+extern snake_error(ecode%3, v%4)
+extern snake_new_array(len%5)
+fun entry(x%11):
+  br entry#0(x%11)
+block entry#0(x%0):
+  x%1 = f()
+  add_0%9 = x%1
+  add_1%10 = 2
+  assertInt(add_0%9)
+  y%2 = add_0%9 + add_1%10
+  add_0%6 = x%1
+  add_1%7 = y%2
+  assertInt(add_0%6)
+  result%8 = add_0%6 + add_1%7
+  ret result%8
+

@@ -1,0 +1,4 @@
+extern f(_)
+def main(_):
+  let x = 3, y = 4, b = f(0) in
+  if b: x else: y

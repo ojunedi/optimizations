@@ -1,0 +1,21 @@
+vertex _%1
+vertex w%2
+vertex x%3
+vertex y%4
+vertex z%5
+vertex result%11
+vertex half%12
+vertex add_1%15
+edge w%2 x%3
+edge w%2 add_1%15
+edge x%3 w%2
+edge x%3 y%4
+edge x%3 add_1%15
+edge y%4 x%3
+edge y%4 z%5
+edge y%4 half%12
+edge z%5 y%4
+edge half%12 y%4
+edge add_1%15 w%2
+edge add_1%15 x%3
+

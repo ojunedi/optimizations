@@ -1,0 +1,41 @@
+extern snake_error(ecode%6, v%7)
+extern snake_new_array(len%8)
+fun entry(z%31):
+  br entry#0(z%31)
+block entry#0(z%0):
+  arrayGet_0%25 = z%0
+  arrayGet_1%26 = 0
+  assertArray(arrayGet_0%25)
+  arr%27 = arrayGet_0%25 ^ 3
+  len%28 = load(arr%27, 0)
+  idx%29 = arrayGet_1%26 >> 1
+  assertInBounds(len%28, idx%29)
+  off%30 = idx%29 + 1
+  z%1 = load(arr%27, off%30)
+  block mult#1(x%2, y%3):
+    block mult_x#2(i%4, acc%5):
+      block thn#3():
+        ret acc%5
+      block els#4():
+        sub_0%23 = i%4
+        sub_1%24 = 2
+        assertInt(sub_0%23)
+        mult_x_0%19 = sub_0%23 - sub_1%24
+        add_0%21 = acc%5
+        add_1%22 = x%2
+        mult_x_1%20 = add_0%21 + add_1%22
+        br mult_x#2(mult_x_0%19, mult_x_1%20)
+      eq_0%15 = i%4
+      eq_1%16 = 0
+      tagged%17 = eq_0%15 == eq_1%16
+      shifted%18 = tagged%17 << 2
+      cond%13 = shifted%18 | 1
+      flag%14 = cond%13 >> 2
+      cbr flag%14 thn#3 els#4
+    mult_x_0%11 = y%3
+    mult_x_1%12 = 0
+    br mult_x#2(mult_x_0%11, mult_x_1%12)
+  mult_0%9 = 14
+  mult_1%10 = z%1
+  br mult#1(mult_0%9, mult_1%10)
+

@@ -1,0 +1,4 @@
+def main(args):
+  def f(a): let c = a + a in g(c) and
+  def g(b): 0 in
+  f(g(args))

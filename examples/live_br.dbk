@@ -1,0 +1,9 @@
+def main(args):
+  let x = args[0] in
+  def f(a, b):
+    g(x + a[b])
+  and
+  def g(c):
+    c
+  in
+  f(args, args[0])

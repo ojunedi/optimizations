@@ -1,0 +1,5 @@
+extern p3()
+extern p4()
+def main(_):
+  let x = p3(), y = p4() in
+  x + y

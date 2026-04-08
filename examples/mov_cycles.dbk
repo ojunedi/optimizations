@@ -1,0 +1,9 @@
+def main(args):
+  def f(a, b, c, d):
+    if a + c > 5:
+      b + d
+    else:
+      f(b, a, d, c)
+  in
+  f(1, 2, 3, 4)
+  

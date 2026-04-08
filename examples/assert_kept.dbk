@@ -1,0 +1,4 @@
+def main(args):
+  let x = 0 in
+  let y = args[x] in
+  x + y

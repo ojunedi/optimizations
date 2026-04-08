@@ -1,0 +1,5 @@
+def main(x):
+  let y = x in
+  let z = y in
+  let w = z in
+  0

@@ -1,0 +1,4 @@
+def main(args):
+  let x = false in
+  let y = x + 1 in
+  x && x

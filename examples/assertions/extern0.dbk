@@ -1,0 +1,5 @@
+extern f()
+def main(x):
+  let x = f() in
+  let y = x + 1 in
+  x + y

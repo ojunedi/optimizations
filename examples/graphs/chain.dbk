@@ -1,0 +1,3 @@
+extern f(a)
+def main(_):
+  let w = 17 in let x = 3 in let y = w + 1 in let z = f(x) in z * y

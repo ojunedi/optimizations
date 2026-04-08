@@ -1,0 +1,23 @@
+extern snake_error(ecode%2, v%3)
+extern snake_new_array(len%4)
+fun entry(_%16):
+  br entry#0(_%16)
+block entry#0(_%0):
+  mkArray_0%12 = 2
+  mkArray_1%13 = 4
+  mkArray_2%14 = 6
+  arr%15 = allocateArray(3)
+  store(arr%15, 1, mkArray_0%12)
+  store(arr%15, 2, mkArray_1%13)
+  store(arr%15, 3, mkArray_2%14)
+  arr%1 = arr%15 | 3
+  arrayGet_0%5 = arr%1
+  arrayGet_1%6 = 4
+  arr%8 = arrayGet_0%5 ^ 3
+  len%9 = load(arr%8, 0)
+  idx%10 = arrayGet_1%6 >> 1
+  assertInBounds(len%9, idx%10)
+  off%11 = idx%10 + 1
+  result%7 = load(arr%8, off%11)
+  ret result%7
+

@@ -1,0 +1,7 @@
+vertex _%0
+vertex x%1
+vertex y%2
+vertex result%8
+edge x%1 y%2
+edge y%2 x%1
+

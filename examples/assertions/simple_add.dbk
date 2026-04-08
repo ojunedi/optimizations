@@ -1,0 +1,2 @@
+def main(x):
+  let y = 0, z = 1 in y + z

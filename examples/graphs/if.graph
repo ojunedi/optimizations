@@ -1,0 +1,21 @@
+vertex _%1
+vertex x%2
+vertex y%3
+vertex b%4
+vertex flag%9
+vertex f_0%10
+edge x%2 y%3
+edge x%2 b%4
+edge x%2 flag%9
+edge x%2 f_0%10
+edge y%3 x%2
+edge y%3 b%4
+edge y%3 flag%9
+edge y%3 f_0%10
+edge b%4 x%2
+edge b%4 y%3
+edge flag%9 x%2
+edge flag%9 y%3
+edge f_0%10 x%2
+edge f_0%10 y%3
+
