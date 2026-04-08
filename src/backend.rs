@@ -580,7 +580,25 @@ impl RegisterAllocator {
     fn chaitin(
         &mut self, mut g: Graph<VarName>, mut remaining: Vec<VarName>, all_regs: &[Reg], log: bool,
     ) {
-        todo!("implement Chaitin's algorithm for graph coloring")
+
+        for v in remaining {
+            // find which registers are already taken by neighbors
+            let neighbor_colors: HashSet<Reg> = g
+                .neighbors(&v)
+                .into_iter()
+                .flatten()
+                .filter_map(|n| self.assignment.get(n).and_then(|a| a.as_reg()))
+                .collect();
+
+            // pick the first available register
+            let alloc = all_regs
+                .iter()
+                .find(|r| !neighbor_colors.contains(r))
+                .map(|r| Allocation::Reg(*r))
+                .unwrap_or_else(|| Allocation::Spill(self.spill()));
+
+            self.assignment.insert(v, alloc);
+        }
     }
 
     pub fn graph_color(&mut self, conflicts: ConflictAnalysis, registers: &[Reg], log: bool) {
