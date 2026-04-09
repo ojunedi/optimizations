@@ -1335,7 +1335,39 @@ impl AssertionRemover {
     fn flow_operation(
         &mut self, dest: &VarName, op: &Operation<VarName>, pre: &PossibleValuesEnv,
     ) -> PossibleValuesEnv {
-        todo!("implement flow_operation")
+        let mut post = pre.clone();
+        let res = match op {
+            Operation::Immediate(imm) => pre.possible_values(imm),
+            Operation::Prim1(_, imm) => {
+                match pre.possible_values(imm) {
+                    PossibleValues::Assigned(_) => PossibleValues::top(),
+                    PossibleValues::None => PossibleValues::None,
+                }
+            }
+            Operation::Prim2(prim, a, b) => {
+                let pa = pre.possible_values(a);
+                let pb = pre.possible_values(b);
+                match (pa, pb) {
+                    (PossibleValues::Assigned(_), PossibleValues::Assigned(_)) => {
+                        match prim {
+                            Prim2::Add | Prim2::Sub | Prim2::Mul => PossibleValues::integer(),
+                            Prim2::Lt | Prim2::Le | Prim2::Gt | Prim2::Ge | Prim2::Eq | Prim2::Neq => PossibleValues::boolean(),
+                            // NOTE: can maybe make these more precise but for now leave as top
+                            Prim2::BitAnd => PossibleValues::top(),
+                            Prim2::BitOr => PossibleValues::top(),
+                            Prim2::BitXor => PossibleValues::top(),
+                        }
+                    }
+                    (PossibleValues::None, _) => PossibleValues::None,
+                    (_, PossibleValues::None) => PossibleValues::None,
+                }
+            }
+            Operation::Call { .. } => PossibleValues::top(),
+            Operation::AllocateArray { .. } => PossibleValues::array(),
+            Operation::Load { .. } => PossibleValues::top(),
+        };
+        post.0.insert(dest.clone(), res);
+        post
     }
 
     /// Removes AssertInt assertions that are guaranteed by the dataflow analysis to succeed
