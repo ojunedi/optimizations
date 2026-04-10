@@ -1351,6 +1351,30 @@ impl AssertionRemover {
         }
     }
 
+    fn bit_and(a: PossibleBitValues, b: PossibleBitValues) -> PossibleBitValues {
+        match (a, b) {
+            (PossibleBitValues::Zero, _) | (_, PossibleBitValues::Zero) => PossibleBitValues::Zero,
+            (PossibleBitValues::One, PossibleBitValues::One) => PossibleBitValues::One,
+            _ => PossibleBitValues::Any,
+        }
+    }
+
+    fn bit_or(a: PossibleBitValues, b: PossibleBitValues) -> PossibleBitValues {
+        match (a, b) {
+            (PossibleBitValues::One, _) | (_, PossibleBitValues::One) => PossibleBitValues::One,
+            (PossibleBitValues::Zero, PossibleBitValues::Zero) => PossibleBitValues::Zero,
+            _ => PossibleBitValues::Any,
+        }
+    }
+
+    fn bit_xor(a: PossibleBitValues, b: PossibleBitValues) -> PossibleBitValues {
+        match (a, b) {
+            (PossibleBitValues::Zero, x) | (x, PossibleBitValues::Zero) => x,
+            (PossibleBitValues::One, PossibleBitValues::One) => PossibleBitValues::Zero,
+            _ => PossibleBitValues::Any,
+        }
+    }
+
     /// Compute the flow function for an operation.
     fn flow_operation(
         &mut self, dest: &VarName, op: &Operation<VarName>, pre: &PossibleValuesEnv,
@@ -1389,14 +1413,22 @@ impl AssertionRemover {
                 let pa = pre.possible_values(a);
                 let pb = pre.possible_values(b);
                 match (pa, pb) {
-                    (PossibleValues::Assigned(_), PossibleValues::Assigned(_)) => {
+                    (PossibleValues::Assigned(ba), PossibleValues::Assigned(bb)) => {
                         match prim {
                             Prim2::Add | Prim2::Sub | Prim2::Mul => PossibleValues::integer(),
                             Prim2::Lt | Prim2::Le | Prim2::Gt | Prim2::Ge | Prim2::Eq | Prim2::Neq => PossibleValues::boolean(),
-                            // NOTE: can maybe make these more precise but for now leave as top
-                            Prim2::BitAnd => PossibleValues::top(),
-                            Prim2::BitOr => PossibleValues::top(),
-                            Prim2::BitXor => PossibleValues::top(),
+                            Prim2::BitAnd => PossibleValues::Assigned([
+                                Self::bit_and(ba[0], bb[0]),
+                                Self::bit_and(ba[1], bb[1]),
+                            ]),
+                            Prim2::BitOr => PossibleValues::Assigned([
+                                Self::bit_or(ba[0], bb[0]),
+                                Self::bit_or(ba[1], bb[1]),
+                            ]),
+                            Prim2::BitXor => PossibleValues::Assigned([
+                                Self::bit_xor(ba[0], bb[0]),
+                                Self::bit_xor(ba[1], bb[1]),
+                            ]),
                         }
                     }
                     (PossibleValues::None, _) => PossibleValues::None,
