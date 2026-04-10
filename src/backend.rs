@@ -522,11 +522,18 @@ impl ConflictAnalysis {
     }
 
     fn build_basic_block(&mut self, block: &BasicBlock<VarName, LiveSet>) {
-        // block params conflict with each other, add to graph and elimination order
+        let body_live = block.body.analysis();
         for (i, p1) in block.params.iter().enumerate() {
             self.interference.insert_vertex(p1.clone());
+            // params conflict with each other
             for p2 in &block.params[i + 1..] {
                 self.interference.insert_edge(p1.clone(), p2.clone());
+            }
+            // params conflict with everything live at block body start
+            for v in body_live.iter() {
+                if v != p1 {
+                    self.interference.insert_edge(p1.clone(), v.clone());
+                }
             }
         }
         self.order.extend(block.params.iter().cloned());
