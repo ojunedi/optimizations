@@ -1275,16 +1275,36 @@ impl AssertionRemover {
             },
 
             AssertType { ty, arg, next, .. } => {
-                todo!("implement analysis for AssertType")
+                AssertType {
+                    ty,
+                    arg,
+                    next: Box::new(self.analyze_block_body(*next, pre)),
+                    ana: pre.clone()
+                }
             }
             AssertLength { len, next, .. } => {
-                todo!("implement AssertLength analysis")
+                AssertLength {
+                    len,
+                    next: Box::new(self.analyze_block_body(*next, pre)),
+                    ana: pre.clone()
+                }
             }
             AssertInBounds { bound, arg, next, .. } => {
-                todo!("implement AssertInBounds analysis")
+                AssertInBounds {
+                    bound,
+                    arg,
+                    next: Box::new(self.analyze_block_body(*next, pre)),
+                    ana: pre.clone()
+                }
             }
             Store { addr, offset, val, next, .. } => {
-                todo!("implement Store analysis")
+                Store {
+                    addr,
+                    offset,
+                    val,
+                    next: Box::new(self.analyze_block_body(*next, pre)),
+                    ana: pre.clone()
+                }
             }
         }
     }
@@ -1338,11 +1358,32 @@ impl AssertionRemover {
         let mut post = pre.clone();
         let res = match op {
             Operation::Immediate(imm) => pre.possible_values(imm),
-            Operation::Prim1(_, imm) => {
-                match pre.possible_values(imm) {
-                    PossibleValues::Assigned(_) => PossibleValues::top(),
-                    PossibleValues::None => PossibleValues::None,
-                }
+            Operation::Prim1(prim, imm) => match pre.possible_values(imm) {
+                PossibleValues::None => PossibleValues::None,
+                PossibleValues::Assigned(bits) => match prim {
+                    Prim1::BitSal(n) | Prim1::BitShl(n) => match n {
+                        0 => PossibleValues::Assigned(bits),
+                        1 => PossibleValues::Assigned([bits[1], PossibleBitValues::Zero]),
+                        _ => PossibleValues::Assigned([PossibleBitValues::Zero, PossibleBitValues::Zero]),
+                    },
+                    Prim1::BitSar(n) | Prim1::BitShr(n) => match n {
+                        0 => PossibleValues::Assigned(bits),
+                        1 => PossibleValues::Assigned([PossibleBitValues::Any, bits[0]]),
+                        _ => PossibleValues::Assigned([PossibleBitValues::Any, PossibleBitValues::Any]),
+                    },
+                    Prim1::BitNot => PossibleValues::Assigned([
+                        match bits[0] {
+                            PossibleBitValues::Zero => PossibleBitValues::One,
+                            PossibleBitValues::One => PossibleBitValues::Zero,
+                            PossibleBitValues::Any => PossibleBitValues::Any,
+                        },
+                        match bits[1] {
+                            PossibleBitValues::Zero => PossibleBitValues::One,
+                            PossibleBitValues::One => PossibleBitValues::Zero,
+                            PossibleBitValues::Any => PossibleBitValues::Any,
+                        },
+                    ]),
+                },
             }
             Operation::Prim2(prim, a, b) => {
                 let pa = pre.possible_values(a);
@@ -1371,10 +1412,92 @@ impl AssertionRemover {
     }
 
     /// Removes AssertInt assertions that are guaranteed by the dataflow analysis to succeed
-    fn remove_assertions(
-        &self, prog: Program<VarName, PossibleValuesEnv>,
-    ) -> Program<VarName, Nil> {
-        todo!("implement remove_assertions")
+    fn remove_assertions(&self, prog: Program<VarName, PossibleValuesEnv>,) -> Program<VarName, Nil> {
+        Program {
+            externs: prog.externs,
+            funs: prog.funs,
+            blocks: self.remove_assertions_prog(prog.blocks)
+        }
+    }
+    fn remove_assertions_prog(&self, blocks: Vec<BasicBlock<VarName, PossibleValuesEnv>>) -> Vec<BasicBlock<VarName, Nil>> {
+        blocks.into_iter().map(|b| self.remove_assertions_block(b)).collect()
+    }
+    fn remove_assertions_block(&self, block: BasicBlock<VarName, PossibleValuesEnv>) -> BasicBlock<VarName, Nil> {
+        BasicBlock {
+            label: block.label,
+            params: block.params,
+            body: self.remove_assertions_body(block.body),
+            ana: Nil,
+        }
+    }
+    fn remove_assertions_body(&self, body: BlockBody<VarName, PossibleValuesEnv>) -> BlockBody<VarName, Nil> {
+        match body {
+            BlockBody::Terminator(t, _) => BlockBody::Terminator(t, Nil),
+            BlockBody::Operation { dest, op, next, ana: _ } => {
+                BlockBody::Operation {
+                    dest,
+                    op,
+                    next: Box::new(self.remove_assertions_body(*next)),
+                    ana: Nil,
+                }
+            }
+            BlockBody::SubBlocks { blocks, next, ana: _ } => {
+                BlockBody::SubBlocks {
+                    blocks: self.remove_assertions_prog(blocks),
+                    next: Box::new(self.remove_assertions_body(*next)),
+                    ana: Nil,
+                }
+            }
+            BlockBody::AssertType { ty, arg, next, ana } => {
+                let pv = ana.possible_values(&arg);
+                let can_remove = match pv {
+                    PossibleValues::Assigned(bits) => {
+                      let mask_len = ty.mask_length();
+                      let tag = ty.tag();
+                      // check last bit if mask covers it
+                      let last_ok = bits[1] == if tag & 1 == 0 { PossibleBitValues::Zero } else { PossibleBitValues::One };
+                      // check second-to-last bit if mask covers it
+                      let second_ok = mask_len < 2 || bits[0] == if tag & 2 == 0 { PossibleBitValues::Zero } else { PossibleBitValues::One };
+                      last_ok && second_ok
+                    }
+                    PossibleValues::None => false,
+                };
+                if can_remove {
+                    self.remove_assertions_body(*next)
+                } else {
+                    BlockBody::AssertType {
+                        ty,
+                        arg,
+                        next: Box::new(self.remove_assertions_body(*next)),
+                        ana: Nil
+                    }
+                }
+            },
+            BlockBody::AssertLength { len, next, .. } => {
+                BlockBody::AssertLength {
+                    len,
+                    next: Box::new(self.remove_assertions_body(*next)),
+                    ana: Nil,
+                }
+            }
+            BlockBody::AssertInBounds { bound, arg, next, .. } => {
+                BlockBody::AssertInBounds {
+                    bound,
+                    arg,
+                    next: Box::new(self.remove_assertions_body(*next)),
+                    ana: Nil,
+                }
+            },
+            BlockBody::Store { addr, offset, val, next, .. } => {
+                BlockBody::Store {
+                    addr,
+                    offset,
+                    val,
+                    next: Box::new(self.remove_assertions_body(*next)),
+                    ana: Nil,
+                }
+            }
+        }
     }
 }
 
